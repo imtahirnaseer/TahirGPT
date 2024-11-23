@@ -25,31 +25,31 @@ TahirGPT is a simple chatbot web Application that allows users to interact with 
 
 ### 1. Empty Chat Interface
 When the chatbot starts, the interface is clean and shows no messages. Users can type their questions or add new Q&A pairs.
-![Empty Chat Interface]()
+![Empty Chat Interface](https://github.com/imtahirnaseer/TahirGPT/blob/14146bcf55213fc626e5324e04db7fadd800550f/Screenshot%202024-11-24%20015014.png)
 
 ---
 
 ### 2. User Asks a Question
 A user types a question in the input field and clicks "Send." The message appears on the right side of the chat window.
-![User Question]()
+![User Question](https://github.com/imtahirnaseer/TahirGPT/blob/14146bcf55213fc626e5324e04db7fadd800550f/Screenshot%202024-11-24%20015215.png)
 
 ---
 
 ### 3. Bot Responds with Preloaded Answer
 The chatbot responds with a predefined answer. Actions like "Copy," "Share," and "Read Aloud" appear below the bot's response.
-![Bot Response]()
+![Bot Response](https://github.com/imtahirnaseer/TahirGPT/blob/14146bcf55213fc626e5324e04db7fadd800550f/Screenshot%202024-11-24%20020418.png)
 
 ---
 
 ### 4. Adding a New Q&A
 The admin clicks "Add Q&A" to open a modal where new questions and answers can be added. Upon saving, the new Q&A is added to the chatbot's memory.
-![Add Q&A Modal]()
+![Add Q&A Modal](https://github.com/imtahirnaseer/TahirGPT/blob/14146bcf55213fc626e5324e04db7fadd800550f/Screenshot%202024-11-24%20020748.png)
 
 ---
 
 ### 5. User Adds a New Question and Gets a Response
 After adding a new Q&A, the user types the newly added question, and the chatbot responds with the custom answer.
-![Custom Question and Answer]()
+![Custom Question and Answer](https://github.com/imtahirnaseer/TahirGPT/blob/14146bcf55213fc626e5324e04db7fadd800550f/Screenshot%202024-11-24%20020844.png)
 
 ---
 
