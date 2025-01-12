@@ -429,98 +429,177 @@ document.addEventListener("DOMContentLoaded", () => {
                               "What’s on your to-do list today?": "Tell me what’s on your mind, and I’ll assist you with it!",
                               "How can I help you make progress today?": "I’m here to help you make progress on whatever you need!",
                               "Is there a project you're focused on?": "Let me know what you're working on, and I can help you out!",
-        };
-  
-    const messagesContainer = document.getElementById("messages");
-    const userInput = document.getElementById("user-input");
-    const sendButton = document.getElementById("send-btn");
-    const addQAButton = document.getElementById("add-qa-btn");
-    const modal = document.getElementById("add-question-modal");
-    const newQuestionInput = document.getElementById("new-question");
-    const newAnswerInput = document.getElementById("new-answer");
-    const saveButton = document.getElementById("save-btn");
-    const cancelButton = document.getElementById("cancel-btn");
-  
-    const appendMessage = (text, sender, addActions = false) => {
-      const message = document.createElement("div");
-      message.classList.add("message", sender);
-  
-      const textContent = document.createElement("p");
-      textContent.textContent = text;
-  
-      message.appendChild(textContent);
-  
-      if (addActions && sender === "bot") {
-        const actions = document.createElement("div");
-        actions.classList.add("actions");
-  
-        // Add Copy Button
-        const copyButton = document.createElement("button");
-        copyButton.textContent = "Copy";
-        copyButton.addEventListener("click", () => {
-          navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
-        });
-        actions.appendChild(copyButton);
-  
-        // Add Share Button
-        const shareButton = document.createElement("button");
-        shareButton.textContent = "Share";
-        shareButton.addEventListener("click", () => {
-          alert(`Sharing: "${text}"`); // Add custom sharing logic here.
-        });
-        actions.appendChild(shareButton);
-  
-        // Add Read Aloud Button
-        const readButton = document.createElement("button");
-        readButton.textContent = "Read Aloud";
-        readButton.addEventListener("click", () => {
-          const utterance = new SpeechSynthesisUtterance(text);
+       
+  };
+
+  const messagesContainer = document.getElementById("messages");
+  const userInput = document.getElementById("user-input");
+  const sendButton = document.getElementById("send-btn");
+  const addQAButton = document.getElementById("add-qa-btn");
+  const modal = document.getElementById("add-question-modal");
+  const newQuestionInput = document.getElementById("new-question");
+  const newAnswerInput = document.getElementById("new-answer");
+  const saveButton = document.getElementById("save-btn");
+  const cancelButton = document.getElementById("cancel-btn");
+
+  const appendMessage = (text, sender, addActions = false) => {
+    const message = document.createElement("div");
+    message.classList.add("message", sender);
+
+    const textContent = document.createElement("p");
+    textContent.textContent = text;
+
+    message.appendChild(textContent);
+
+    if (addActions && sender === "bot") {
+      const actions = document.createElement("div");
+      actions.classList.add("actions");
+
+      // Add Copy Button
+      const copyButton = document.createElement("button");
+      copyButton.textContent = "Copy";
+      copyButton.addEventListener("click", () => {
+        navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+      });
+      actions.appendChild(copyButton);
+
+      // Add Share Button
+      const shareButton = document.createElement("button");
+      shareButton.textContent = "Share";
+      shareButton.addEventListener("click", () => {
+        alert(`Sharing: "${text}"`); // Add custom sharing logic here.
+      });
+      actions.appendChild(shareButton);
+
+      // Add Read Aloud Button
+      const readButton = document.createElement("button");
+      readButton.textContent = "Read Aloud";
+      let isReading = false;
+      let utterance;
+      readButton.addEventListener("click", () => {
+        if (isReading) {
+          speechSynthesis.cancel();
+          readButton.textContent = "Read Aloud";
+          isReading = false;
+        } else {
+          utterance = new SpeechSynthesisUtterance(text);
           speechSynthesis.speak(utterance);
-        });
-        actions.appendChild(readButton);
-  
-        message.appendChild(actions);
+          readButton.textContent = "Stop Reading";
+          isReading = true;
+        }
+      });
+      actions.appendChild(readButton);
+
+      message.appendChild(actions);
+    }
+
+    messagesContainer.appendChild(message);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  };
+
+  const handleSend = async () => {
+    const userQuestion = userInput.value.trim();
+    if (!userQuestion) return;
+
+    appendMessage(userQuestion, "user");
+    userInput.value = "";
+
+    // Step 1: Check spelling
+    const correctedQuery = await checkSpelling(userQuestion);
+    if (correctedQuery !== userQuestion) {
+      appendCorrectionOption(userQuestion, correctedQuery);
+      return;
+    }
+
+    // Step 2: Search Wikipedia or preloaded data
+    const response = preloadedData[userQuestion] || (await searchWikipedia(userQuestion)) || "Sorry, I don't have the answer to that. You can add it!";
+    appendMessage(response, "bot", true);
+  };
+
+  const appendCorrectionOption = (original, corrected) => {
+    const correctionMessage = document.createElement("div");
+    correctionMessage.classList.add("correction");
+
+    const textContent = document.createElement("p");
+    textContent.textContent = `Did you mean: "${corrected}"?`;
+
+    const correctButton = document.createElement("button");
+    correctButton.textContent = "Use this";
+    correctButton.addEventListener("click", () => {
+      userInput.value = corrected;
+      handleSend();
+      correctionMessage.remove();
+    });
+
+    correctionMessage.appendChild(textContent);
+    correctionMessage.appendChild(correctButton);
+    messagesContainer.appendChild(correctionMessage);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  };
+
+  const checkSpelling = async (text) => {
+    const endpoint = `https://api.datamuse.com/words?sp=${encodeURIComponent(text)}&max=1`;
+    try {
+      const response = await fetch(endpoint);
+      const suggestions = await response.json();
+      return suggestions.length > 0 ? suggestions[0].word : text;
+    } catch (error) {
+      console.error("Error checking spelling:", error);
+      return text;
+    }
+  };
+
+  const searchWikipedia = async (query) => {
+    const searchEndpoint = `https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srsearch=${encodeURIComponent(query)}`;
+    try {
+      const searchResponse = await fetch(searchEndpoint);
+      const searchData = await searchResponse.json();
+
+      if (searchData.query.search.length > 0) {
+        const pageTitle = searchData.query.search[0].title;
+        const contentEndpoint = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext&format=json&origin=*&titles=${encodeURIComponent(pageTitle)}`;
+        const contentResponse = await fetch(contentEndpoint);
+        const contentData = await contentResponse.json();
+
+        const page = Object.values(contentData.query.pages)[0];
+        if (page && page.extract) {
+          return `${pageTitle}: ${page.extract}`;
+        } else {
+          return "Sorry, the full content for this topic could not be retrieved.";
+        }
+      } else {
+        return "No TahirGPT results found for your query.";
       }
-  
-      messagesContainer.appendChild(message);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    };
-  
-    const handleSend = () => {
-      const userQuestion = userInput.value.trim();
-      if (!userQuestion) return;
-  
-      appendMessage(userQuestion, "user");
-      userInput.value = "";
-  
-      const response = preloadedData[userQuestion] || "Sorry, I don't have the answer to that. You can add it!";
-      appendMessage(response, "bot", true);
-    };
-  
-    sendButton.addEventListener("click", handleSend);
-    userInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") handleSend();
-    });
-  
-    addQAButton.addEventListener("click", () => {
-      modal.style.display = "flex";
-    });
-  
-    saveButton.addEventListener("click", () => {
-      const newQuestion = newQuestionInput.value.trim();
-      const newAnswer = newAnswerInput.value.trim();
-  
-      if (newQuestion && newAnswer) {
-        preloadedData[newQuestion] = newAnswer;
-        appendMessage("New Q&A added successfully!", "bot");
-        modal.style.display = "none";
-        newQuestionInput.value = "";
-        newAnswerInput.value = "";
-      }
-    });
-  
-    cancelButton.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
+    } catch (error) {
+      console.error("Error fetching data from TahirGPT:", error);
+      return "An error occurred while searching TahirGPT. Please try again later.";
+    }
+  };
+
+  sendButton.addEventListener("click", handleSend);
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") handleSend();
   });
-  
+
+  addQAButton.addEventListener("click", () => {
+    modal.style.display = "flex";
+  });
+
+  saveButton.addEventListener("click", () => {
+    const newQuestion = newQuestionInput.value.trim();
+    const newAnswer = newAnswerInput.value.trim();
+
+    if (newQuestion && newAnswer) {
+      preloadedData[newQuestion] = newAnswer;
+      appendMessage("New Q&A added successfully!", "bot");
+      modal.style.display = "none";
+      newQuestionInput.value = "";
+      newAnswerInput.value = "";
+    }
+  });
+
+  cancelButton.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+});
+
